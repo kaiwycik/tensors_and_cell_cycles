@@ -17,6 +17,6 @@
   "citeSuggestTemplate": "[[{{citekey}}]]",
   "openNoteAfterImport": true,
   "whichNotesToOpenAfterImport": "first-imported-note",
-  "pdfExportImageTesseractPath": "/etc/profiles/per-user/lalie/bin/tesseract",
+  "pdfExportImageTesseractPath": "/opt/homebrew/bin/tesseract",
   "pdfExportImageOCR": true
 }

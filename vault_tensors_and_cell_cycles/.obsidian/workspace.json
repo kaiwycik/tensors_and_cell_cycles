@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Reading List.md",
+                "file": "_templates/zotero-source-note.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Reading List"
+              "title": "zotero-source-note"
             }
           },
           {
@@ -114,7 +114,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Reading List.md",
+                "file": "_templates/zotero-source-note.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -124,7 +124,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Reading List"
+              "title": "Backlinks for zotero-source-note"
             }
           },
           {
@@ -133,12 +133,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Reading List.md",
+                "file": "_templates/zotero-source-note.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Reading List"
+              "title": "Outgoing links from zotero-source-note"
             }
           },
           {
@@ -162,13 +162,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Reading List.md",
+                "file": "_templates/zotero-source-note.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Reading List"
+              "title": "Outline of zotero-source-note"
             }
           },
           {
@@ -218,11 +218,17 @@
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
-      "table-editor-obsidian:Advanced Tables Toolbar": false
+      "table-editor-obsidian:Advanced Tables Toolbar": false,
+      "templater-obsidian:Templater": false,
+      "daily-notes-editor:Open Daily Note Editor": false,
+      "obsidian-advanced-slides:Show Slide Preview": false
     }
   },
   "active": "4908d11832ce3b8d",
   "lastOpenFiles": [
+    "_templates/thinking-note.md",
+    "_templates/zotero-source-note.md",
+    "Reading List.md",
     "Meetings.md",
     "Dailies.md",
     "TODOs.md",
@@ -230,7 +236,6 @@
     "README.md",
     "_taskido/demo_file.md",
     "3. Thoughts/Idea 1.md",
-    "Reading List.md",
     "2. Notions/Untitled.md",
     "Daily Notes/2023-11-06.md",
     "2. Notions/SATHV.md",
@@ -247,8 +252,6 @@
     "_templates/presentations/slides-cea/toc-red.md",
     "_templates/presentations/slides-cea/toc-light.md",
     "_templates/presentations/slides-cea-demo.md",
-    "_templates/presentations/slides-cea/content-image-top.md",
-    "_templates/presentations/slides-cea/content-image-bottom.md",
     "_templates/presentations/slides-cea",
     "_templates/presentations/resources-cea/deco-coin-blanc.png",
     "_templates/presentations/resources-cea/quote-rouge.png",
