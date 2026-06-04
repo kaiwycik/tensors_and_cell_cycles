@@ -1,7 +1,7 @@
 {
-  "commitMessage": "nixos save: {{date}}",
+  "commitMessage": "macbook save: {{date}}",
   "commitDateFormat": "YYYY-MM-DD HH:mm:ss",
-  "autoSaveInterval": 5,
+  "autoSaveInterval": 0,
   "autoPushInterval": 0,
   "autoPullInterval": 0,
   "autoPullOnBoot": true,
@@ -51,5 +51,5 @@
     "lastShownAuthorDisplay": "initials",
     "lastShownDateTimeFormatOptions": "date"
   },
-  "autoCommitMessage": "nixos autosave: {{date}}"
+  "autoCommitMessage": "macbook autosave: {{date}}"
 }
