@@ -13,30 +13,15 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "3. Thoughts/On the type of tensor decomposition used in scITD.md",
-                "mode": "source",
+                "file": "3. Thoughts/Treatment effects on the cell cycle in a single cell line.md",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "On the type of tensor decomposition used in scITD"
-            }
-          },
-          {
-            "id": "35901f11eb6d4802",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Daily Notes/2026-06-08.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "2026-06-08"
+              "title": "Treatment effects on the cell cycle in a single cell line"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -220,26 +205,28 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "35901f11eb6d4802",
+  "active": "94841c38f7eb6ac3",
   "lastOpenFiles": [
     "Daily Notes/2026-06-09.md",
+    "3. Thoughts/Treatment effects on the cell cycle in a single cell line.md",
+    "Meeting Notes/2026-06-09 - Meeting w. Tarek.md",
+    "TODOs.md",
+    "Dailies.md",
+    "Meetings.md",
+    "3. Thoughts/On the type of tensor decomposition used in scITD.md",
+    "Stats.md",
+    "Start Here.md",
+    "Reading List.md",
     "Daily Notes/2026-06-08.md",
     "Daily Notes/2026-06-05.md",
     "2. Notions/scITD.md",
     "Claude Output/recreating-scITD-tutorial.md",
     "Claude Output",
-    "TODOs.md",
     "Daily Notes/2026-06-04.md",
-    "Dailies.md",
-    "Meetings.md",
-    "Reading List.md",
-    "Stats.md",
     "3. Thoughts/scITD's 'pseudobulking'.md",
-    "3. Thoughts/On the type of tensor decomposition used in scITD.md",
     "1. Source Notes/@Mitchel.etal2025.md",
     "1. Source Notes/@Zikry.etal2024.md",
     "1. Source Notes/@Stallaert.etal2022.md",
-    "Start Here.md",
     "1. Source Notes/@Bi.etal2021.md",
     "1. Source Notes/@Auddy.etal2025.md",
     "1. Source Notes/@Kolda.Bader2009.md",
@@ -248,8 +235,6 @@
     "README.md",
     "1. Source Notes/@Saha.etal2025.md",
     "_templates/zotero-source-note.md",
-    "_templates/thinking-note.md",
-    "_taskido/demo_file.md",
     "_templates/presentations/slides-cea",
     "_templates/presentations/resources-cea/deco-coin-blanc.png",
     "_templates/presentations/resources-cea/quote-rouge.png",
