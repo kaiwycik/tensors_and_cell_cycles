@@ -27,20 +27,6 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "2. Notions/scITD.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "scITD"
-            }
-          },
-          {
-            "id": "c86e9c7872a2d385",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
                 "file": "Daily Notes/2026-06-08.md",
                 "mode": "source",
                 "source": false
@@ -50,7 +36,7 @@
             }
           }
         ],
-        "currentTab": 2
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -234,11 +220,15 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "c86e9c7872a2d385",
+  "active": "35901f11eb6d4802",
   "lastOpenFiles": [
+    "Daily Notes/2026-06-09.md",
     "Daily Notes/2026-06-08.md",
-    "TODOs.md",
     "Daily Notes/2026-06-05.md",
+    "2. Notions/scITD.md",
+    "Claude Output/recreating-scITD-tutorial.md",
+    "Claude Output",
+    "TODOs.md",
     "Daily Notes/2026-06-04.md",
     "Dailies.md",
     "Meetings.md",
@@ -246,7 +236,6 @@
     "Stats.md",
     "3. Thoughts/scITD's 'pseudobulking'.md",
     "3. Thoughts/On the type of tensor decomposition used in scITD.md",
-    "2. Notions/scITD.md",
     "1. Source Notes/@Mitchel.etal2025.md",
     "1. Source Notes/@Zikry.etal2024.md",
     "1. Source Notes/@Stallaert.etal2022.md",
@@ -261,8 +250,6 @@
     "_templates/zotero-source-note.md",
     "_templates/thinking-note.md",
     "_taskido/demo_file.md",
-    "3. Thoughts/Idea 1.md",
-    "2. Notions/Untitled.md",
     "_templates/presentations/slides-cea",
     "_templates/presentations/resources-cea/deco-coin-blanc.png",
     "_templates/presentations/resources-cea/quote-rouge.png",
@@ -281,7 +268,6 @@
     "_media",
     "_taskido/view.js",
     "_taskido/view.css",
-    "_taskido",
     "Untitled.canvas"
   ]
 }
