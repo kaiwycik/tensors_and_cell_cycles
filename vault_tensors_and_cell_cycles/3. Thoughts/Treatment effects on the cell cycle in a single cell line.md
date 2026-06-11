@@ -9,7 +9,7 @@ $$
 $$
 A Tucker decomposition then gives
 $$
-X \approx G \times_1 T \times_2 C \times_3 P,
+X \approx \mathcal{G} \times_1 T \times_2 C \times_3 P,
 $$
 and the object of interest are the loadings — to wit, $T$ (treatment) and $C$ (cell-cycle phases).
 
