@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Daily Notes/2026-06-10.md",
+                "file": "2. Notions/Tucker tensor decomposition.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "2026-06-10"
+              "title": "Tucker tensor decomposition"
             }
           }
         ]
@@ -207,10 +207,13 @@
   },
   "active": "94841c38f7eb6ac3",
   "lastOpenFiles": [
+    "Images/tucker_decomposition_example.png",
     "2. Notions/Tucker tensor decomposition.md",
+    "Images",
+    "2. Notions/n-Mode Product.md",
+    "Daily Notes/2026-06-10.md",
     "3. Thoughts/Treatment effects on the cell cycle in a single cell line.md",
     "2. Notions/scITD.md",
-    "Daily Notes/2026-06-10.md",
     "Daily Notes/2026-06-09.md",
     "Meeting Notes/2026-06-09 - Meeting w. Tarek.md",
     "TODOs.md",
@@ -232,9 +235,7 @@
     "1. Source Notes/@Bi.etal2021.md",
     "1. Source Notes/@Auddy.etal2025.md",
     "1. Source Notes/@Kolda.Bader2009.md",
-    "1. Source Notes/@zotero-item-405.md",
     "Untitled.base",
-    "README.md",
     "_templates/presentations/slides-cea",
     "_templates/presentations/resources-cea/deco-coin-blanc.png",
     "_templates/presentations/resources-cea/quote-rouge.png",
@@ -245,14 +246,12 @@
     "_templates/presentations/resources-cea/profil1.png",
     "_templates/presentations/resources-cea/deco-fond-droit.png",
     "_templates/presentations/resources-cea/deco-fond-droit-gros.png",
-    "_templates/presentations/resources-cea/deco-fond-gauche.png",
     "_templates/presentations/resources-cea/deco.zip",
     "_templates/slides/deco.zip",
     "_templates/presentations/resources-cea",
     "_templates/presentations",
     "_media",
     "_taskido/view.js",
-    "_taskido/view.css",
     "Untitled.canvas"
   ]
 }
