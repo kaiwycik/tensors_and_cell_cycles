@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "2. Notions/Tucker tensor decomposition.md",
-                "mode": "source",
+                "file": "Daily Notes/2026-06-11.md",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Tucker tensor decomposition"
+              "title": "2026-06-11"
             }
           }
         ]
@@ -207,8 +207,9 @@
   },
   "active": "94841c38f7eb6ac3",
   "lastOpenFiles": [
-    "Images/tucker_decomposition_example.png",
     "2. Notions/Tucker tensor decomposition.md",
+    "Daily Notes/2026-06-11.md",
+    "Images/tucker_decomposition_example.png",
     "Images",
     "2. Notions/n-Mode Product.md",
     "Daily Notes/2026-06-10.md",
