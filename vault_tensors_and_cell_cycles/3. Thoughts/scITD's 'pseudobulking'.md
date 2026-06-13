@@ -3,7 +3,7 @@ category: thinking-note
 ---
 # scITD's 'pseudobulking'
 [[@Mitchel.etal2025]] perform "pseudobulking" before tensor decomposition.
-Pseudobulking appears to just be clustering the cells and then normalizing & scaling by cluster. The clusters act as a proxy for cell-type labels — so this only makes sense when one has (or is willing to infer) such labels.
+Pseudobulking appears to just be grouping the cells and then normalizing & scaling by grouping (e.g., cell-types). 
 
 >[!warning] !
 > - What's unclear is why pseudobulk at all rather than leaving the data in single-cell, unlabelled form.
