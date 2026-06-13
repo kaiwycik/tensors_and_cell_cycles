@@ -17,8 +17,7 @@ If we consider a tensor $\mathcal{X} \in \mathbb{R}^{I \times J \times K}$, its 
 In this case, for a fixed $i \in \{1, \dots, I\}$ and $k \in \{1, \dots, K\}$, we would obtain a fiber which "runs" along the columns of $\mathcal{X}$ – for $i=1, k=1$, this would be the front-facing top "edge" of our "cube".  Denote these fibers as $\mathbf{x}_{ik} \in \mathbb{R}^J$. 
 We can think of $\mathcal{X} \times_{2} \mathbf{U}$ as multiplying all these fibers, for all possible combinations of $i, k$, with $\mathbf{U}$, yielding new fibers $\mathbf{y}_{ik} = \mathbf{U} \mathbf{x}_{ik} \in \mathbb{R}^L$. 
 
-Analogously, we can think of "rotating" the individual fibers s.t. they are column vectors, and stacking all $\mathbf{x}_{ik}$ into a long matrix: $\mathbf{X} \in \mathbb{R}^{J \times (I \cdot K)}$. We then obtain $\mathbf{Y} = \mathbf{U} \mathbf{X} \in \mathbb{R}^{L \times (I \cdot K)}$, which we can then again unfold into a tensor. 
-
+Analogously, we can think of "rotating" the individual fibers s.t. they are column vectors, and stacking all $\mathbf{x}_{ik}$ into a long matrix: $\mathbf{X} \in \mathbb{R}^{J \times (I \cdot K)}$ (see "Matricization", section 2.4 in [[@Kolda.Bader2009]]). We then obtain $\mathbf{Y} = \mathbf{U} \mathbf{X} \in \mathbb{R}^{L \times (I \cdot K)}$, which we can then again unfold into a tensor. 
 This also provides some insight into the actual underlying computation:
 $$
 \begin{split}
