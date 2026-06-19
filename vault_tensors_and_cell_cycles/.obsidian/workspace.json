@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Meeting Notes/2026-06-18 - Meeting w. Tarek.md",
+                "file": "Daily Notes/2026-06-19.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "2026-06-18 - Meeting w. Tarek"
+              "title": "2026-06-19"
             }
           }
         ]
@@ -205,10 +205,15 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "94841c38f7eb6ac3",
+  "active": "722997cb7154eee3",
   "lastOpenFiles": [
-    "Meeting Notes/2026-06-09 - Meeting w. Tarek.md",
+    "TODOs.md",
+    "Daily Notes/2026-06-19.md",
     "Meeting Notes/2026-06-18 - Meeting w. Tarek.md",
+    "Daily Notes/2026-06-18.md",
+    "Daily Notes/2026-06-15.md",
+    "Stats.md",
+    "Meeting Notes/2026-06-09 - Meeting w. Tarek.md",
     "Meeting Notes/2026-06-15 - Meeting w. Tarek.md",
     "3. Thoughts/scITD's 'pseudobulking'.md",
     "3. Thoughts/Recovering sample-level resolution from Tucker factor loadings.md",
@@ -217,8 +222,6 @@
     "Daily Notes/2026-06-11.md",
     "Daily Notes/2026-06-12.md",
     "Daily Notes/2026-06-10.md",
-    "Stats.md",
-    "TODOs.md",
     "Reading List.md",
     "Meetings.md",
     "Dailies.md",
@@ -230,10 +233,7 @@
     "1. Source Notes/@Mitchel.etal2025.md",
     "1. Source Notes/@Auddy.etal2025.md",
     "_perm_test_root.md",
-    "Claude Output/_perm_test.md",
     "Images/HOSVD_algorithm.png",
-    "Daily Notes/2026-06-05.md",
-    "Daily Notes/2026-06-04.md",
     "Images/tucker_decomposition_example.png",
     "Images",
     "Claude Output",
