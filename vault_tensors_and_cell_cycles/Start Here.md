@@ -10,12 +10,12 @@ you can publish*:
 
 In this vault those four stages are the four numbered folders:
 
-| SCTO stage      | Folder here          | What goes in it |
-| --------------- | -------------------- | --------------- |
-| **S**ources     | `1. Source Notes`    | One note per paper/document you read |
-| **C**ompendiums | `2. Notions`         | Facts & concepts in your own words, linked back to their source |
-| **T**houghts    | `3. Thoughts`        | Questions and "what-ifs" that pop up while reading |
-| **O**ntologies  | `4. Outlines`        | Polished syntheses — drafts of future writing |
+| SCTO stage      | Folder here       | What goes in it                                                 |
+| --------------- | ----------------- | --------------------------------------------------------------- |
+| **S**ources     | `1. Source Notes` | One note per paper/document you read                            |
+| **C**ompendiums | `2. Notions`      | Facts & concepts in your own words, linked back to their source |
+| **T**houghts    | `3. Thoughts`     | Questions and "what-ifs" that pop up while reading              |
+| **O**ntologies  | `4. Outlines`     | Polished syntheses — drafts of future writing                   |
 
 ![SCTO overview](https://substackcdn.com/image/fetch/$s_!s5NN!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fbucketeer-e05bbc84-baa3-437e-9518-adb32be77984.s3.amazonaws.com%2Fpublic%2Fimages%2Faee4dbaf-b466-412c-b3ce-75383d56266e_1306x907.jpeg)
 
