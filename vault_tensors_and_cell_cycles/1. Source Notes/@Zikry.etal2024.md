@@ -6,10 +6,10 @@ authors: Tarek M. Zikry, Samuel C. Wolff, Jolene S. Ranek, Harris M. Davis, Ande
 year: 2024
 itemType: journalArticle
 publisher: Proceedings of the National Academy of Sciences
-tags: 
+tags:
 citekey: Zikry.etal2024
 annotation-target: file:///Users/kaiwycik/Zotero/storage/DKZCJ5DI/Zikry%20et%20al.%20-%202024%20-%20Cell%20cycle%20plasticity%20underlies%20fractional%20resistance%20to%20palbociclib%20in%20ER+HER2−%20breast%20tumor%20cells.pdf
-status: unread
+status: read
 dateread:
 ---
 # Cell cycle plasticity underlies fractional resistance to palbociclib in ER+/HER2− breast tumor cells

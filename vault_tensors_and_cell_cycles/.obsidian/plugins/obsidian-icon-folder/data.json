@@ -6,11 +6,11 @@
     "emojiStyle": "native",
     "iconColor": null,
     "recentlyUsedIcons": [
+      "👾",
       "LiListTodo",
       "LiPieChart",
       "FarChartBar",
-      "LiCalendarClock",
-      "LiPresentation"
+      "LiCalendarClock"
     ],
     "recentlyUsedIconsSize": 5,
     "rules": [],
@@ -36,5 +36,6 @@
   },
   "Daily Notes": "FarPenToSquare",
   "Presentations": "LiScreenShare",
-  "Meeting Notes": "FarPenToSquare"
+  "Meeting Notes": "FarPenToSquare",
+  "Claude Output": "👾"
 }

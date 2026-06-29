@@ -5,10 +5,10 @@ title: Tensor Decompositions and Applications
 authors: Tamara G. Kolda, Brett W. Bader
 year: 2009
 itemType: journalArticle
-tags: 
+tags:
 citekey: Kolda.Bader2009
 annotation-target: file:///Users/kaiwycik/Zotero/storage/XCHBNIEQ/Kolda%20and%20Bader%20-%202009%20-%20Tensor%20Decompositions%20and%20Applications.pdf
-status: unread
+status: read
 dateread:
 ---
 # Tensor Decompositions and Applications
