@@ -322,12 +322,12 @@ class CCTensorViz:
             dendrogram_ratio=0.15,
             cbar_kws={"label": "Cosine similarity"},
         )
-        
+
         g.cax.set_visible(False)
         g.ax_col_dendrogram.set_title(title, fontsize=12, pad=10)
         g.ax_heatmap.tick_params(axis="both", labelsize=8)
         plt.tight_layout()
-        
+
         return g
 
     def F_slice_montage(self, annotate=True):
@@ -520,6 +520,49 @@ class CCTensorViz:
         fig.tight_layout()
         return fig, axes
 
+    def factor_score_violins(self):
+        self._ensure_per_treatment()
+
+        rows = []
+        for t in self.treatments:
+            pt = self._per_treatment[t]
+            for f, fname in enumerate(self.factor_names):
+                rows.append(pd.DataFrame({
+                    "treatment": t,
+                    "phase": pt["phase"],
+                    "factor": fname,
+                    "score": pt["embed"][:, f],
+                }))
+        df = pd.concat(rows, ignore_index=True)
+
+        fig, axes = plt.subplots(
+            self.n_factors, 1, figsize=(12, 2.4 * self.n_factors),
+            sharex=True, squeeze=False,
+        )
+        axes = axes.ravel()
+
+        for ax, fname in zip(axes, self.factor_names):
+            sns.violinplot(
+                data=df[df["factor"] == fname],
+                x="treatment", y="score", hue="phase",
+                order=list(self.treatments), hue_order=list(self.cc_phases),
+                cut=0, inner="quartile", linewidth=0.8, ax=ax,
+            )
+            ax.set_title(fname, loc="left", fontsize=10)
+            ax.axhline(0, color="0.6", lw=0.8, ls="--", zorder=0)
+            ax.set_xlabel("")
+            ax.set_ylabel("Factor score")
+            if ax.get_legend() is not None:
+                ax.get_legend().remove()
+            sns.despine(ax=ax)
+
+        axes[-1].tick_params(axis="x", rotation=45)
+        handles, labels = axes[0].get_legend_handles_labels()
+        fig.legend(handles, labels, title="Phase", bbox_to_anchor=(0.95, 0.5), loc="center left")
+        fig.suptitle("Factor scores by treatment", y=0.96)
+        fig.tight_layout(rect=[0, 0, 0.93, 0.99])
+        return fig, axes
+
     def cosine_distance_violins(self):
         self._ensure_per_treatment()
 
@@ -602,15 +645,15 @@ class CCTensorViz:
             fig.tight_layout(rect=[0, 0, 0.85, 0.99])
         else:
             fig.suptitle(title, y=0.98, x=0.38)
-        
-        
+
+
         cbar = fig.colorbar(pts, ax=axes, shrink=0.4, aspect=40, pad=0.02, label="Factor Value")
         if show_phase_contours:
             fig.legend(
-                handles=handles, title="Phase", bbox_to_anchor=(cbar.ax.get_position().x0, 0.15), 
+                handles=handles, title="Phase", bbox_to_anchor=(cbar.ax.get_position().x0, 0.15),
                 loc="upper left", fontsize=8, framealpha=0.7
-            ) 
-        
+            )
+
         return fig, axes
 
     def phate_global_by_factor(self, show_phase_contours=False):
@@ -654,14 +697,14 @@ class CCTensorViz:
             fig.tight_layout(rect=[0, 0, 0.85, 0.99])
         else:
             fig.suptitle(title, y=0.98, x=0.38)
-        
+
         cbar = fig.colorbar(pts, ax=axes, shrink=0.4, aspect=40, pad=0.02, label="Factor Value")
         if show_phase_contours:
             fig.legend(
-                handles=handles, title="Phase", bbox_to_anchor=(cbar.ax.get_position().x0, 0.15), 
+                handles=handles, title="Phase", bbox_to_anchor=(cbar.ax.get_position().x0, 0.15),
                 loc="upper left", fontsize=8, framealpha=0.7
-            ) 
-        
+            )
+
         return fig, axes
 
     # ------------------------------------------------------------------ #
