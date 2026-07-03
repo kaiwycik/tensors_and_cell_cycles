@@ -362,6 +362,48 @@ class CCTensorViz:
         fig.colorbar(im, ax=flat[:n].tolist(), orientation="vertical", shrink=0.8, pad=0.04)
         return fig, axes
 
+    def F_slice_montage_normalized(self, control="Control", annotate=True):
+        matches = np.flatnonzero(self.treatments == control)
+        if len(matches) == 0:
+            raise ValueError(f"Control treatment '{control}' not found in {list(self.treatments)}.")
+        ctrl_idx = matches[0]
+
+        F_delta = self.F - self.F[ctrl_idx : ctrl_idx + 1, :, :]
+
+        n = self.n_factors
+        cols = min(n, 2)
+        rows = math.ceil(n / cols)
+        vmax = np.abs(F_delta).max() or 1.0
+
+        fig, axes = plt.subplots(rows, cols, figsize=(3 * n, 4 * rows), squeeze=False)
+        flat = axes.ravel()
+
+        for f in range(n):
+            ax = flat[f]
+            im = ax.imshow(F_delta[:, :, f], cmap=CMAP, vmin=-vmax, vmax=vmax, aspect="auto")
+
+            ax.set_title(f"Latent Protein-Factor {f + 1}", fontsize=10)
+            ax.set_xticks(np.arange(len(self.cc_phases)))
+            ax.set_xticklabels(self.cc_phases, fontsize=8)
+            ax.set_xlabel("Phase", fontsize=8)
+            ax.set_yticks(np.arange(len(self.treatments)))
+            show_yticks = (f % cols == 0)
+            ax.set_yticklabels(self.treatments if show_yticks else [], fontsize=8)
+
+            if annotate:
+                self._annotate_heatmap(ax, F_delta[:, :, f], vmax, text_size=6)
+
+        for idx in range(n, len(flat)):
+            flat[idx].axis("off")
+
+        fig.suptitle(
+            f"F (Control-Normalized) -- Treatment Effect on Latent Protein-Factors by Phase",
+            fontsize=13, y=0.94, x=0.42,
+        )
+        fig.tight_layout(rect=[0, 0, 0.88, 0.96])
+        fig.colorbar(im, ax=flat[:n].tolist(), orientation="vertical", shrink=0.8, pad=0.04)
+        return fig, axes
+
     def singular_value_spectrum(self):
         mode_labels = ["Treatment", "Cell-cycle phase", "Protein"]
         fig, axes = plt.subplots(1, 3, figsize=(15, 4))

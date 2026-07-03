@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Daily Notes/2026-06-29.md",
-                "mode": "source",
+                "file": "3. Thoughts/Treatment effects on the cell cycle in a single cell line.md",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "2026-06-29"
+              "title": "Treatment effects on the cell cycle in a single cell line"
             }
           }
         ]
@@ -205,10 +205,14 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "722997cb7154eee3",
+  "active": "6b69502de212d061",
   "lastOpenFiles": [
-    "TODOs.md",
+    "3. Thoughts/scITD's 'pseudobulking'.md",
+    "3. Thoughts/Recovering sample-level resolution from Tucker factor loadings.md",
+    "3. Thoughts/On the type of tensor decomposition used in scITD.md",
+    "2. Notions/n-Mode Tensor Product.md",
     "Daily Notes/2026-06-29.md",
+    "TODOs.md",
     "Daily Notes/2026-06-26.md",
     "Untitled.md",
     "2. Notions/Tucker tensor decomposition.md",
@@ -220,7 +224,6 @@
     "1. Source Notes/@Bi.etal2021.md",
     "1. Source Notes/@Kolda.Bader2009.md",
     "1. Source Notes/@Zikry.etal2024.md",
-    "2. Notions/n-Mode Tensor Product.md",
     "Start Here.md",
     "Daily Notes/2026-06-19.md",
     "Daily Notes/2026-06-18.md",
@@ -228,11 +231,8 @@
     "Stats.md",
     "Meeting Notes/2026-06-09 - Meeting w. Tarek.md",
     "Meeting Notes/2026-06-15 - Meeting w. Tarek.md",
-    "3. Thoughts/scITD's 'pseudobulking'.md",
-    "3. Thoughts/Recovering sample-level resolution from Tucker factor loadings.md",
     "3. Thoughts/Treatment effects on the cell cycle in a single cell line.md",
     "Daily Notes/2026-06-11.md",
-    "Daily Notes/2026-06-12.md",
     "Images/HOSVD_algorithm.png",
     "Images/tucker_decomposition_example.png",
     "Images",
