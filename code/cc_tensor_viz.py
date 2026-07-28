@@ -5,14 +5,18 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 import seaborn as sns
 import scanpy as sc
 import phate
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 import tensorly as tl
 from tensorly import tenalg
 from statsmodels.nonparametric.smoothers_lowess import lowess
 from scipy.stats import gaussian_kde
 from scipy.cluster.hierarchy import linkage
+import umap
 from scipy.spatial.distance import squareform
 
 POS = "#b2182b"
@@ -154,8 +158,8 @@ class CCTensorViz:
             sub = pt["adata"].copy()
             sub.X = pt["Xz"].copy()
 
-            sc.pp.neighbors(sub, random_state=self.random_state)  # Build KNN graph
-            sc.tl.diffmap(sub, n_comps=10)  # Transition matrix of random walks on the KNN graph
+            sc.pp.neighbors(sub, random_state=self.random_state)
+            sc.tl.diffmap(sub, n_comps=10)
 
             g1_mask = sub.obs[pcol].astype(str).values == "G1"
             if g1_mask.any():
@@ -299,7 +303,7 @@ class CCTensorViz:
         M_norm = M / norms
 
         gram = M_norm @ M_norm.T
-        dist = (1 - gram) / 2
+        dist = np.maximum((1 - gram) / 2, 0)
         np.fill_diagonal(dist, 0)
 
         condensed = squareform(dist, checks=False)
@@ -830,3 +834,236 @@ class CCTensorViz:
             shrink=0.25, aspect=25, pad=0.08, label="Pseudotime",
         )
         return fig, axes
+
+
+# ------------------------------------------------------------------ #
+# Cross-cell-line module-level functions
+# ------------------------------------------------------------------ #
+
+_MARKERS = ["o", "s", "^", "D", "v", "P", "*", "X", "h", "<"]
+
+
+def cross_cellline_embedding(df, method="pca", random_state=0, dot_size=80,
+                             title=None, show_treatment=None, exclude_factors=None):
+    """2D embedding of a cross-cell-line factor matrix.
+
+    Parameters
+    ----------
+    df : DataFrame with MultiIndex containing at least "cell_line" and "factor" levels.
+         May also contain a "treatment" level.
+    method : "pca", "tsne", or "umap".
+    show_treatment : If None (default), auto-annotates treatment names when the
+        "treatment" level is present. Set True/False to override.
+    exclude_factors : list of factor names to drop before computing the embedding,
+        e.g. ["Factor 4"] or ["Factor 3", "Factor 4"].
+    """
+    plt.rcParams.update(_RC)
+
+    if exclude_factors is not None:
+        factors_level = df.index.get_level_values("factor")
+        keep = ~factors_level.isin(exclude_factors)
+        df = df.loc[keep]
+
+    cell_lines = df.index.get_level_values("cell_line")
+    factors = df.index.get_level_values("factor")
+    has_treatment = "treatment" in df.index.names
+    if show_treatment is None:
+        show_treatment = has_treatment
+    treatments = df.index.get_level_values("treatment") if has_treatment else None
+
+    if method == "pca":
+        reducer = PCA(n_components=2, random_state=random_state)
+        coords = reducer.fit_transform(df.values)
+        xlabel = f"PC 1 ({reducer.explained_variance_ratio_[0] * 100:.1f}%)"
+        ylabel = f"PC 2 ({reducer.explained_variance_ratio_[1] * 100:.1f}%)"
+    elif method == "tsne":
+        reducer = TSNE(
+            n_components=2, random_state=random_state,
+            perplexity=min(30, len(df) - 1)
+        )
+        coords = reducer.fit_transform(df.values)
+        xlabel, ylabel = "t-SNE 1", "t-SNE 2"
+    elif method == "umap":
+        reducer = umap.UMAP(n_components=2, random_state=random_state)
+        coords = reducer.fit_transform(df.values)
+        xlabel, ylabel = "UMAP 1", "UMAP 2"
+    else:
+        raise ValueError(f"Unknown method: {method}")
+
+    unique_factors = sorted(factors.unique(), key=lambda x: int(x.split()[-1]))
+    factor_colors = dict(zip(unique_factors, sns.color_palette("tab10", len(unique_factors))))
+
+    unique_cl = list(dict.fromkeys(cell_lines))
+    cl_markers = dict(zip(unique_cl, _MARKERS[:len(unique_cl)]))
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    for cl in unique_cl:
+        for f in unique_factors:
+            mask = (cell_lines == cl) & (factors == f)
+            if not mask.any():
+                continue
+            ax.scatter(
+                coords[mask, 0], coords[mask, 1],
+                c=[factor_colors[f]], marker=cl_markers[cl],
+                s=dot_size, edgecolors="0.3", linewidths=0.5, zorder=3,
+            )
+
+    if show_treatment and treatments is not None:
+        for i in range(len(df)):
+            ax.annotate(
+                str(treatments[i]),
+                (coords[i, 0], coords[i, 1]),
+                fontsize=5, alpha=0.7,
+                textcoords="offset points", xytext=(4, 4),
+            )
+
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title or f"Cross-cell-line factor embedding ({method.upper()})")
+
+    factor_handles = [
+        Line2D([0], [0], marker="o", color="w", markerfacecolor=factor_colors[f],
+            markersize=8, label=f)
+        for f in unique_factors
+    ]
+    cl_handles = [
+        Line2D([0], [0], marker=cl_markers[cl], color="w", markerfacecolor="0.5",
+            markersize=8, label=cl)
+        for cl in unique_cl
+    ]
+
+    leg1 = ax.legend(handles=factor_handles, title="Factor", loc="upper left",
+                    bbox_to_anchor=(1.02, 1.0), frameon=False)
+    ax.add_artist(leg1)
+    ax.legend(handles=cl_handles, title="Cell line", loc="upper left",
+            bbox_to_anchor=(1.02, 1.0 - len(unique_factors) * 0.06 - 0.1),
+            frameon=False)
+
+    sns.despine(ax=ax)
+    fig.tight_layout()
+    return fig, ax
+
+
+def cross_cellline_clustermap(df, method="average", annotate=True, title=None):
+    """Cosine-similarity clustermap for a cross-cell-line factor matrix.
+
+    Same mathematical recipe as CCTensorViz.gram_clustermap, applied to
+    the stacked factor matrix. Handles 2-level and 3-level MultiIndex.
+
+    For large matrices (n > 64), text tick labels are replaced by colored
+    side bars showing factor and cell-line identity (plus treatment when
+    the MultiIndex has 3 levels).
+    """
+    plt.rcParams.update(_RC)
+
+    n = len(df)
+    use_sidebars = n > 64
+
+    M = df.values
+    norms = np.linalg.norm(M, axis=1, keepdims=True)
+    norms = np.where(norms == 0, 1.0, norms)
+    M_norm = M / norms
+
+    gram = M_norm @ M_norm.T
+    dist = np.maximum((1 - gram) / 2, 0)
+    np.fill_diagonal(dist, 0)
+
+    condensed = squareform(dist, checks=False)
+    Z = linkage(condensed, method=method)
+
+    if use_sidebars:
+        cell_lines = df.index.get_level_values("cell_line")
+        factors = df.index.get_level_values("factor")
+        has_treatment = "treatment" in df.index.names
+
+        unique_factors = sorted(factors.unique(), key=lambda x: int(x.split()[-1]))
+        factor_pal = dict(zip(unique_factors, sns.color_palette("tab10", len(unique_factors))))
+
+        unique_cl = list(dict.fromkeys(cell_lines))
+        cl_pal = dict(zip(unique_cl, sns.color_palette("Set2", len(unique_cl))))
+
+        side_colors = pd.DataFrame({
+            "Factor": [factor_pal[f] for f in factors],
+            "Cell line": [cl_pal[cl] for cl in cell_lines],
+        })
+
+        legend_handles = (
+            [Patch(facecolor=factor_pal[f], label=f) for f in unique_factors]
+            + [Patch(facecolor="white", label="")]
+            + [Patch(facecolor=cl_pal[cl], label=cl) for cl in unique_cl]
+        )
+
+        if has_treatment:
+            treatments = df.index.get_level_values("treatment")
+            unique_tr = list(dict.fromkeys(treatments))
+            tr_pal = dict(zip(unique_tr, sns.color_palette("tab20", len(unique_tr))))
+            side_colors["Treatment"] = [tr_pal[t] for t in treatments]
+            legend_handles += (
+                [Patch(facecolor="white", label="")]
+                + [Patch(facecolor=tr_pal[t], label=t) for t in unique_tr]
+            )
+
+        figsize = min(20, max(10, n * 0.08))
+
+        g = sns.clustermap(
+            gram,
+            row_linkage=Z,
+            col_linkage=Z,
+            cmap=CMAP,
+            center=0,
+            vmin=-1,
+            vmax=1,
+            annot=False,
+            xticklabels=False,
+            yticklabels=False,
+            row_colors=side_colors,
+            col_colors=side_colors,
+            figsize=(figsize, figsize),
+            dendrogram_ratio=0.1,
+            colors_ratio=0.03 * side_colors.shape[1],
+            cbar_kws={"label": "Cosine similarity"},
+        )
+
+        g.cax.set_visible(False)
+        g.ax_col_dendrogram.set_title(
+            title or "Cross-cell-line factor cosine similarity",
+            fontsize=12, pad=10,
+        )
+        g.ax_heatmap.legend(
+            handles=legend_handles, loc="center left",
+            bbox_to_anchor=(1.02, 0.5), frameon=False, fontsize=8,
+        )
+        plt.tight_layout()
+
+    else:
+        labels = [" - ".join(str(v) for v in idx) for idx in df.index]
+        text_size = max(5, 8 - n // 10)
+
+        g = sns.clustermap(
+            gram,
+            row_linkage=Z,
+            col_linkage=Z,
+            cmap=CMAP,
+            center=0,
+            vmin=-1,
+            vmax=1,
+            annot=annotate,
+            fmt=".2f",
+            annot_kws={"size": text_size},
+            xticklabels=labels,
+            yticklabels=labels,
+            figsize=(max(8, n * 0.45), max(8, n * 0.45)),
+            dendrogram_ratio=0.15,
+            cbar_kws={"label": "Cosine similarity"},
+        )
+
+        g.cax.set_visible(False)
+        g.ax_col_dendrogram.set_title(
+            title or "Cross-cell-line factor cosine similarity",
+            fontsize=12, pad=10,
+        )
+        g.ax_heatmap.tick_params(axis="both", labelsize=text_size)
+        plt.tight_layout()
+
+    return g
