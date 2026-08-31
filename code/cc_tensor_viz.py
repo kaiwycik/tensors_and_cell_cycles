@@ -951,14 +951,13 @@ def cross_cellline_clustermap(df, method="average", annotate=True, title=None):
     Same mathematical recipe as CCTensorViz.gram_clustermap, applied to
     the stacked factor matrix. Handles 2-level and 3-level MultiIndex.
 
-    For large matrices (n > 64), text tick labels are replaced by colored
-    side bars showing factor and cell-line identity (plus treatment when
-    the MultiIndex has 3 levels).
+    For larger matrices (n > 40), colored side bars show cell-line,
+    factor, and/or treatment identity alongside text tick labels.
     """
     plt.rcParams.update(_RC)
 
     n = len(df)
-    use_sidebars = n > 64
+    use_sidebars = n > 40
 
     M = df.values
     norms = np.linalg.norm(M, axis=1, keepdims=True)
@@ -972,42 +971,46 @@ def cross_cellline_clustermap(df, method="average", annotate=True, title=None):
     condensed = squareform(dist, checks=False)
     Z = linkage(condensed, method=method)
 
+    labels = [" - ".join(str(v) for v in idx) for idx in df.index]
+
     if use_sidebars:
         cell_lines = df.index.get_level_values("cell_line")
-        factors = df.index.get_level_values("factor")
-        has_treatment = "treatment" in df.index.names
-
-        unique_factors = sorted(factors.unique(), key=lambda x: int(x.split()[-1]))
-        factor_pal = dict(zip(unique_factors, sns.color_palette("tab10", len(unique_factors))))
-
         unique_cl = list(dict.fromkeys(cell_lines))
         cl_pal = dict(zip(unique_cl, sns.color_palette("Set2", len(unique_cl))))
 
         side_colors = pd.DataFrame({
-            "Factor": [factor_pal[f] for f in factors],
             "Cell line": [cl_pal[cl] for cl in cell_lines],
-        })
+        }, index=df.index)
 
-        legend_handles = (
-            [Patch(facecolor=factor_pal[f], label=f) for f in unique_factors]
-            + [Patch(facecolor="white", label="")]
-            + [Patch(facecolor=cl_pal[cl], label=cl) for cl in unique_cl]
-        )
-
-        if has_treatment:
-            treatments = df.index.get_level_values("treatment")
-            unique_tr = list(dict.fromkeys(treatments))
-            tr_pal = dict(zip(unique_tr, sns.color_palette("tab20", len(unique_tr))))
-            side_colors["Treatment"] = [tr_pal[t] for t in treatments]
-            legend_handles += (
-                [Patch(facecolor="white", label="")]
-                + [Patch(facecolor=tr_pal[t], label=t) for t in unique_tr]
+        if "factor" in df.index.names:
+            factors = df.index.get_level_values("factor")
+            unique_factors = sorted(
+                factors.unique(), key=lambda x: int(x.split()[-1])
+            )
+            factor_pal = dict(zip(
+                unique_factors,
+                sns.color_palette("tab10", len(unique_factors)),
+            ))
+            side_colors.insert(
+                0, "Factor", [factor_pal[f] for f in factors]
             )
 
-        figsize = min(20, max(10, n * 0.08))
+        if "treatment" in df.index.names:
+            treatments = df.index.get_level_values("treatment")
+            unique_tr = list(dict.fromkeys(treatments))
+            tr_pal = dict(zip(
+                unique_tr,
+                sns.color_palette("tab20", len(unique_tr)),
+            ))
+            side_colors["Treatment"] = [tr_pal[t] for t in treatments]
+
+        figsize = min(20, max(12, n * 0.28))
+        text_size = max(9, round(figsize * 0.7))
+
+        gram_df = pd.DataFrame(gram, index=df.index, columns=df.index)
 
         g = sns.clustermap(
-            gram,
+            gram_df,
             row_linkage=Z,
             col_linkage=Z,
             cmap=CMAP,
@@ -1015,8 +1018,8 @@ def cross_cellline_clustermap(df, method="average", annotate=True, title=None):
             vmin=-1,
             vmax=1,
             annot=False,
-            xticklabels=False,
-            yticklabels=False,
+            xticklabels=labels,
+            yticklabels=labels,
             row_colors=side_colors,
             col_colors=side_colors,
             figsize=(figsize, figsize),
@@ -1030,14 +1033,10 @@ def cross_cellline_clustermap(df, method="average", annotate=True, title=None):
             title or "Cross-cell-line factor cosine similarity",
             fontsize=12, pad=10,
         )
-        g.ax_heatmap.legend(
-            handles=legend_handles, loc="center left",
-            bbox_to_anchor=(1.02, 0.5), frameon=False, fontsize=8,
-        )
+        g.ax_heatmap.tick_params(axis="both", labelsize=text_size)
         plt.tight_layout()
 
     else:
-        labels = [" - ".join(str(v) for v in idx) for idx in df.index]
         text_size = max(5, 8 - n // 10)
 
         g = sns.clustermap(

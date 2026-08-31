@@ -233,3 +233,30 @@ def cross_cellline_protein_factors_by_treatment(cct_dict):
 
     index = pd.MultiIndex.from_tuples(index_tuples, names=["cell_line", "treatment", "factor"])
     return pd.DataFrame(np.vstack(rows), index=index, columns=proteins)
+
+
+def cross_cellline_phase_profiles(cct_dict):
+    """Phase-resolved factor activations across cell lines.
+
+    For each (cell_line, treatment, factor_f), stores F[t, :, f] where
+    F = G x_1 T x_2 C. Each row is a 3-dimensional vector giving the
+    factor's activation in each cell-cycle phase (not averaged).
+
+    Returns DataFrame with 3-level MultiIndex (cell_line, treatment, factor) x phases.
+    """
+    phases = None
+    rows, index_tuples = [], []
+
+    for name, cct in cct_dict.items():
+        if phases is None:
+            phases = list(cct.cc_phases)
+
+        F = tenalg.multi_mode_dot(cct.core, [cct.factors[0], cct.factors[1]], modes=[0, 1])
+
+        for t_idx, treatment in enumerate(cct.treatments):
+            for f in range(F.shape[2]):
+                rows.append(F[t_idx, :, f])
+                index_tuples.append((name, treatment, f"Factor {f + 1}"))
+
+    index = pd.MultiIndex.from_tuples(index_tuples, names=["cell_line", "treatment", "factor"])
+    return pd.DataFrame(np.vstack(rows), index=index, columns=phases)
