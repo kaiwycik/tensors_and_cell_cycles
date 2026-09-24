@@ -15,7 +15,7 @@ import tensorly as tl
 from tensorly import tenalg
 from statsmodels.nonparametric.smoothers_lowess import lowess
 from scipy.stats import gaussian_kde
-from scipy.cluster.hierarchy import linkage
+from scipy.cluster.hierarchy import leaves_list, linkage
 import umap
 from scipy.spatial.distance import squareform
 
@@ -41,7 +41,7 @@ _RC = {
 # %% CCTensorViz
 class CCTensorViz:
 
-    def __init__(self, cct, n_sub=10_000, n_per=3000, dot_size=5, random_state=0):
+    def __init__(self, cct, n_sub=10_000, n_per=3000, dot_size=5, random_state=0, mode0_label="Treatment"):
         if cct.core is None or cct.factors is None:
             raise ValueError("CCTensor must be fitted (call set_tensor_decompositions or determine_rank first).")
         if cct.tensor is None:
@@ -52,6 +52,9 @@ class CCTensorViz:
         self.n_per = n_per
         self.dot_size = dot_size
         self.random_state = random_state
+        # Name of the first tensor mode (e.g. "Treatment", or "Cell line" for per-drug tensors).
+        self.mode0_label = mode0_label
+        self._mode0_tag = mode0_label.lower().replace(" ", "-")
 
         self.treatments = np.asarray(cct.treatments)
         self.cc_phases = np.asarray(cct.cc_phases)
@@ -121,7 +124,7 @@ class CCTensorViz:
     def _ensure_per_treatment(self):
         if self._per_treatment is not None:
             return
-        print("Computing per-treatment PHATE embeddings...")
+        print(f"Computing per-{self._mode0_tag} PHATE embeddings...")
         adata = self.cct.adata
         tcol = self.cct.treatment_col
         pcol = self.cct.cc_phase_col
@@ -150,7 +153,7 @@ class CCTensorViz:
         if self._per_treatment_dpt_done:
             return
         self._ensure_per_treatment()
-        print("Computing per-treatment diffusion pseudotime...")
+        print(f"Computing per-{self._mode0_tag} diffusion pseudotime...")
         pcol = self.cct.cc_phase_col
 
         for t in self.treatments:
@@ -241,17 +244,17 @@ class CCTensorViz:
 
         ax.set_xticks(np.arange(n_t_factors))
         ax.set_xticklabels([f"{i+1}" for i in range(n_t_factors)])
-        ax.set_xlabel("Latent Treatment-Factors", fontsize=10)
+        ax.set_xlabel(f"Latent {self._mode0_tag.title()}-Factors", fontsize=10)
 
         ax.set_yticks(np.arange(len(self.treatments)))
         ax.set_yticklabels(self.treatments, fontsize=8)
-        ax.set_ylabel("Treatment", fontsize=10)
+        ax.set_ylabel(self.mode0_label, fontsize=10)
 
         if annotate:
             self._annotate_heatmap(ax, T, vmax, text_size)
 
         fig.colorbar(im, ax=ax, orientation="horizontal", shrink=0.4, pad=0.05)
-        ax.set_title("Treatment Loadings", fontsize=13)
+        ax.set_title(f"{self._mode0_tag.title()} Loadings", fontsize=13)
         fig.tight_layout()
         return fig, ax
 
@@ -296,7 +299,7 @@ class CCTensorViz:
         else:
             M = self.treatment_loadings
             labels = list(self.treatments)
-            title = "Treatment cosine similarity (latent factor space)"
+            title = f"{self.mode0_label} cosine similarity (latent factor space)"
 
         norms = np.linalg.norm(M, axis=1, keepdims=True)
         norms = np.where(norms == 0, 1.0, norms)
@@ -361,7 +364,7 @@ class CCTensorViz:
         for idx in range(n, len(flat)):
             flat[idx].axis("off")
 
-        fig.suptitle("F -- Treatment x Latent Protein-Factors by Phase", fontsize=13, y=0.94, x=0.42)
+        fig.suptitle(f"F -- {self.mode0_label} x Latent Protein-Factors by Phase", fontsize=13, y=0.94, x=0.42)
         fig.tight_layout(rect=[0, 0, 0.88, 0.96])
         fig.colorbar(im, ax=flat[:n].tolist(), orientation="vertical", shrink=0.8, pad=0.04)
         return fig, axes
@@ -409,7 +412,7 @@ class CCTensorViz:
         return fig, axes
 
     def singular_value_spectrum(self):
-        mode_labels = ["Treatment", "Cell-cycle phase", "Protein"]
+        mode_labels = [self.mode0_label, "Cell-cycle phase", "Protein"]
         fig, axes = plt.subplots(1, 3, figsize=(15, 4))
 
         for i, (ax, label) in enumerate(zip(axes, mode_labels)):
@@ -508,7 +511,7 @@ class CCTensorViz:
         phate_df["dominant_protein"] = dominant.str.removeprefix("nuclear_mean_").values
 
         configs = [
-            ("treatment", "Treatment", {}),
+            ("treatment", self.mode0_label, {}),
             ("phase", "Cell-cycle phase", {}),
             ("dominant_protein", "Dominant protein", {"palette": "tab20"}),
         ]
@@ -605,7 +608,7 @@ class CCTensorViz:
         axes[-1].tick_params(axis="x", rotation=45)
         handles, labels = axes[0].get_legend_handles_labels()
         fig.legend(handles, labels, title="Phase", bbox_to_anchor=(0.95, 0.5), loc="center left")
-        fig.suptitle("Factor scores by treatment", y=0.96)
+        fig.suptitle(f"Factor scores by {self.mode0_label.lower()}", y=0.96)
         fig.tight_layout(rect=[0, 0, 0.93, 0.99])
         return fig, axes
 
@@ -684,7 +687,7 @@ class CCTensorViz:
                 if a == 0:
                     ax.set_ylabel(self.factor_names[f], fontsize=10)
 
-        title = "Per-treatment PHATE by latent protein-factor"
+        title = f"Per-{self._mode0_tag} PHATE by latent protein-factor"
         if show_phase_contours:
             handles = [Line2D([], [], color=c, lw=1.5, label=p) for p, c in PHASE_COLORS.items()]
             fig.suptitle(title, y=0.98, x=0.38)
@@ -736,7 +739,7 @@ class CCTensorViz:
                 if a == 0:
                     ax.set_ylabel(self.factor_names[f], fontsize=10)
 
-        title = "Per-treatment global PHATE embedding by latent protein-factor"
+        title = f"Per-{self._mode0_tag} global PHATE embedding by latent protein-factor"
         if show_phase_contours:
             handles = [Line2D([], [], color=c, lw=1.5, label=p) for p, c in PHASE_COLORS.items()]
             fig.suptitle(title, y=0.98, x=0.38)
@@ -827,7 +830,7 @@ class CCTensorViz:
         handles = [Line2D([], [], marker="o", ls="", color=c, ms=5) for c in PHASE_COLORS.values()]
         axes[0][0].legend(handles, PHASE_COLORS.keys(), loc="upper right", fontsize=8, framealpha=0.7)
 
-        fig.suptitle(f"{fname} along diffusion pseudotime (per treatment)", y=0.91, fontsize=13)
+        fig.suptitle(f"{fname} along diffusion pseudotime (per {self.mode0_label.lower()})", y=0.91, fontsize=13)
         fig.tight_layout(rect=[0, 0, 0.90, 0.99])
         fig.colorbar(
             pts, ax=axes[:, 1].tolist(),
@@ -1066,3 +1069,223 @@ def cross_cellline_clustermap(df, method="average", annotate=True, title=None):
         plt.tight_layout()
 
     return g
+
+
+def _factor_color(factor):
+    """tab10 color keyed by factor number, matching cross_cellline_embedding."""
+    return sns.color_palette("tab10")[int(factor.split()[-1]) - 1]
+
+
+def _influence_violin(ax, pos, vals, color, width, min_n, points=False):
+    """One violin body with a black median tick. Jittered points replace the body when there are
+    fewer than min_n values, and are drawn on top of it when points=True."""
+    vals = np.asarray(vals, dtype=float)
+    vals = vals[np.isfinite(vals)]
+    if len(vals) == 0:
+        return
+
+    draw_body = len(vals) >= min_n and np.ptp(vals) > 0
+    if draw_body:
+        parts = ax.violinplot([vals], positions=[pos], widths=width, showextrema=False)
+        for body in parts["bodies"]:
+            body.set_facecolor(color)
+            body.set_edgecolor("none")
+            body.set_alpha(0.75)
+    if points or not draw_body:
+        jitter = np.random.default_rng(0).uniform(-0.3, 0.3, len(vals)) * width
+        ax.scatter(
+            pos + jitter, vals, s=8, color="0.25" if draw_body else color,
+            alpha=0.7, linewidths=0, zorder=3,
+        )
+
+    ax.hlines(np.median(vals), pos - 0.35 * width, pos + 0.35 * width, color="k", lw=1.5, zorder=4)
+
+
+def cross_cellline_loading_violins(df, factors=("Factor 1", "Factor 2"), title=None):
+    """Protein loadings per protein, one violin per latent protein-factor, pooled over cell lines.
+
+    df : output of cross_cellline_protein_factors (MultiIndex (cell_line, factor) x proteins).
+         Each violin pools the loadings P[k, f] of one protein across cell lines; the points are
+         the individual cell lines. Loadings are assumed sign-aligned across cell lines (check
+         with cross_cellline_clustermap first).
+    """
+    plt.rcParams.update(_RC)
+
+    proteins = list(df.columns)
+    width = 0.8 / len(factors)
+    offsets = (np.arange(len(factors)) - (len(factors) - 1) / 2) * width
+
+    fig, ax = plt.subplots(figsize=(max(10, 0.7 * len(proteins)), 5))
+
+    for f, off in zip(factors, offsets):
+        sub = df.xs(f, level="factor")
+        for x, protein in enumerate(proteins):
+            _influence_violin(ax, x + off, sub[protein].values, _factor_color(f), width, min_n=3, points=True)
+
+    ax.axhline(0, color="0.6", lw=0.8, ls="--", zorder=0)
+    for x in np.arange(0.5, len(proteins) - 0.5):
+        ax.axvline(x, color="0.85", lw=0.6, zorder=0)
+    ax.set_xticks(np.arange(len(proteins)))
+    ax.set_xticklabels(proteins, rotation=45, ha="right", fontsize=8)
+    ax.set_xlim(-0.6, len(proteins) - 0.4)
+    ax.set_ylabel("Loading")
+    ax.set_title(title or "Protein loadings on latent protein-factors across cell lines")
+
+    handles = [Patch(facecolor=_factor_color(f), alpha=0.75, label=f) for f in factors]
+    ax.legend(handles=handles, title="Factor", loc="upper left", bbox_to_anchor=(1.01, 1.0), frameon=False)
+
+    sns.despine(ax=ax)
+    fig.tight_layout()
+    return fig, ax
+
+
+def cross_cellline_cluster_violins(df, labels, title=None, min_n=10, max_cols=5):
+    """One panel per protein: protein influence by cluster, one violin per latent protein-factor.
+
+    df : output of cross_cellline_protein_influence (or the phase-averaged
+         cross_cellline_protein_factors_by_treatment); values are pooled over all index
+         levels other than cell_line and treatment.
+    labels : Series of 0-based cluster labels indexed by (cell_line, treatment), e.g. built
+         from CARVE.get_labels. Clusters are numbered from 1 in the plot.
+    """
+    plt.rcParams.update(_RC)
+
+    keys = pd.MultiIndex.from_arrays([
+        df.index.get_level_values("cell_line"), df.index.get_level_values("treatment"),
+    ])
+    cluster = labels.reindex(keys).values
+    if np.isnan(cluster.astype(float)).any():
+        raise ValueError("labels are missing for some (cell_line, treatment) pairs in df.")
+    clusters = np.sort(labels.unique())
+    n_members = labels.value_counts()
+
+    factors = df.index.get_level_values("factor")
+    unique_factors = sorted(factors.unique(), key=lambda x: int(x.split()[-1]))
+    width = 0.8 / len(unique_factors)
+    offsets = (np.arange(len(unique_factors)) - (len(unique_factors) - 1) / 2) * width
+
+    proteins = list(df.columns)
+    cols = min(len(proteins), max_cols)
+    rows = math.ceil(len(proteins) / cols)
+    fig, axes = plt.subplots(rows, cols, figsize=(3.6 * cols, 2.8 * rows), squeeze=False)
+    flat = axes.ravel()
+
+    for p_idx, protein in enumerate(proteins):
+        ax = flat[p_idx]
+        vals_all = df[protein].values
+
+        for c_idx, c in enumerate(clusters):
+            for f, off in zip(unique_factors, offsets):
+                mask = (cluster == c) & (factors == f)
+                _influence_violin(ax, c_idx + off, vals_all[mask], _factor_color(f), width, min_n)
+            ax.text(
+                c_idx, 0.02, f"{n_members[c]}", transform=ax.get_xaxis_transform(),
+                ha="center", va="bottom", fontsize=6, color="0.5",
+            )
+
+        ax.set_ylim(*np.percentile(vals_all, [2, 98]))
+        ax.axhline(0, color="0.6", lw=0.8, ls="--", zorder=0)
+        ax.set_xticks(np.arange(len(clusters)))
+        ax.set_xticklabels(clusters + 1)
+        ax.set_xlim(-0.6, len(clusters) - 0.4)
+        ax.set_title(protein, fontsize=10)
+        if p_idx % cols == 0:
+            ax.set_ylabel("Influence")
+        if p_idx >= len(proteins) - cols:
+            ax.set_xlabel("Cluster")
+
+    for idx in range(len(proteins), len(flat)):
+        flat[idx].axis("off")
+
+    handles = [Patch(facecolor=_factor_color(f), alpha=0.75, label=f) for f in unique_factors]
+    fig.legend(handles=handles, title="Factor", loc="lower right", bbox_to_anchor=(0.98, 0.04), frameon=False)
+    fig.suptitle(
+        f"{title or 'Protein influence by cluster'}  (k={len(clusters)})\n"
+        f"y-axis: 2nd-98th percentile per protein, black tick = median, "
+        f"<{min_n} values shown as points, grey number = members per cluster",
+        fontsize=12,
+    )
+    fig.tight_layout(rect=[0, 0, 1, 0.96])
+    return fig, axes
+
+
+def cross_cellline_cluster_heatmap(df, labels, title=None, cbar_label="Protein influence"):
+    """Heatmap of a (cell_line, treatment)-indexed matrix with rows grouped by cluster.
+
+    df : DataFrame indexed by (cell_line, treatment), e.g. one factor of
+         cross_cellline_protein_factors_by_treatment (columns = proteins) or of
+         cross_cellline_phase_profiles (columns = phases).
+    labels : Series of 0-based cluster labels indexed by (cell_line, treatment), e.g. built
+         from CARVE.get_labels. Clusters are numbered from 1 in the plot.
+    Rows are grouped by cluster and, within each cluster, ordered by average-linkage hierarchical
+    clustering (Euclidean, optimal leaf ordering) of the displayed values, so similar rows are
+    adjacent. Side bars show cell line, treatment and cluster with the same palettes as
+    cross_cellline_clustermap.
+    """
+    plt.rcParams.update(_RC)
+
+    cluster = labels.reindex(df.index).values
+    if np.isnan(cluster.astype(float)).any():
+        raise ValueError("labels are missing for some (cell_line, treatment) pairs in df.")
+    order = []
+    for c in np.unique(cluster):
+        idx = np.flatnonzero(cluster == c)
+        if len(idx) > 2:
+            idx = idx[leaves_list(linkage(df.values[idx], method="average", optimal_ordering=True))]
+        order.extend(idx)
+    df, cluster = df.iloc[order], cluster[order]
+
+    cell_lines = df.index.get_level_values("cell_line")
+    treatments = df.index.get_level_values("treatment")
+    unique_cl = list(dict.fromkeys(labels.index.get_level_values("cell_line")))
+    unique_tr = list(dict.fromkeys(labels.index.get_level_values("treatment")))
+    clusters = np.sort(np.unique(cluster))
+    palettes = {
+        "Cell line": (cell_lines, dict(zip(unique_cl, sns.color_palette("Set2", len(unique_cl))))),
+        "Treatment": (treatments, dict(zip(unique_tr, sns.color_palette("tab20", len(unique_tr))))),
+        "Cluster": (cluster + 1, dict(zip(clusters + 1, sns.color_palette("tab10", len(clusters))))),
+    }
+
+    n, p = df.shape
+    fig, axes = plt.subplots(
+        1, 4, figsize=(max(8, 0.45 * p + 3), max(6, 0.22 * n)),
+        gridspec_kw={"width_ratios": [1, 1, 1, max(12, p)], "wspace": 0.05},
+    )
+    boundaries = np.flatnonzero(np.diff(cluster)) + 0.5
+
+    for ax, (name, (values, pal)) in zip(axes[:3], palettes.items()):
+        ax.imshow(np.array([pal[v] for v in values]).reshape(n, 1, 3), aspect="auto")
+        ax.set_xticks([0])
+        ax.set_xticklabels([name], rotation=90, fontsize=8)
+        ax.set_yticks([])
+        for b in boundaries:
+            ax.axhline(b, color="white", lw=2)
+
+    ax = axes[3]
+    vmax = np.abs(df.values).max() or 1.0
+    im = ax.imshow(df.values, cmap=CMAP, vmin=-vmax, vmax=vmax, aspect="auto")
+    for b in boundaries:
+        ax.axhline(b, color="white", lw=2)
+    ax.set_xticks(np.arange(p))
+    ax.set_xticklabels(df.columns, rotation=45, ha="right", fontsize=8)
+    ax.yaxis.tick_right()
+    ax.set_yticks(np.arange(n))
+    ax.set_yticklabels([f"{cl} - {tr}" for cl, tr in zip(cell_lines, treatments)], fontsize=7)
+    ax.tick_params(axis="y", length=0)
+    ax.set_title(f"{title or cbar_label}  (k={len(clusters)})", fontsize=12)
+
+    cbar = fig.colorbar(im, ax=ax, shrink=0.35, pad=0.15, aspect=25, label=cbar_label)
+
+    # Legends stacked to the right of the colorbar, starting level with the top of the heatmap.
+    fig_h = fig.get_size_inches()[1]
+    x = cbar.ax.get_position().x1 + 0.06
+    y = ax.get_position().y1
+    for name, (_, pal) in palettes.items():
+        handles = [Patch(facecolor=c, label=str(k)) for k, c in pal.items()]
+        fig.legend(
+            handles=handles, title=name, loc="upper left", bbox_to_anchor=(x, y),
+            frameon=False, fontsize=8, title_fontsize=9,
+        )
+        y -= (len(handles) + 2) * 0.2 / fig_h
+
+    return fig, axes

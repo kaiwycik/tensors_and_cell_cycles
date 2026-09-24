@@ -1,3 +1,4 @@
+import copy
 from dataclasses import dataclass
 
 import numpy as np
@@ -150,6 +151,39 @@ class CCTensor:
         self.set_tensor_decompositions(truncation_rank=[self.tensor.shape[0], self.tensor.shape[1], n_protein_factors])
         return n_protein_factors
 
+def sign_align_protein_factors(cct_dict):
+    """Flip each cell line's protein factors to a common sign across cell lines.
+
+    For factor f, v_f is the leading left singular vector of the (n_proteins x n_cell_lines)
+    matrix of loadings [P_1[:, f], ..., P_L[:, f]], oriented to agree with the majority of
+    cell lines. Each P_l[:, f] with P_l[:, f] . v_f < 0 is negated together with the core
+    slice G_l[:, :, f], which leaves the reconstruction unchanged.
+
+    Returns a dict of aligned (shallow-copied) CCTensor objects and a DataFrame of the signs
+    applied (cell lines x factors, -1 = flipped).
+    """
+    names = list(cct_dict)
+    n_factors = cct_dict[names[0]].factors[2].shape[1]
+    signs = np.ones((len(names), n_factors))
+
+    for f in range(n_factors):
+        V = np.column_stack([cct_dict[name].factors[2][:, f] for name in names])
+        dots = np.linalg.svd(V, full_matrices=False)[0][:, 0] @ V
+        if dots.sum() < 0:
+            dots = -dots
+        signs[:, f] = np.where(dots < 0, -1.0, 1.0)
+
+    aligned = {}
+    for i, name in enumerate(names):
+        cct = copy.copy(cct_dict[name])
+        cct.factors = [cct.factors[0], cct.factors[1], cct.factors[2] * signs[i]]
+        cct.core = cct.core * signs[i]
+        aligned[name] = cct
+
+    columns = [f"Factor {f + 1}" for f in range(n_factors)]
+    return aligned, pd.DataFrame(signs.astype(int), index=names, columns=columns)
+
+
 def cross_cellline_protein_factors(cct_dict):
     """
     Stack protein loadings across cell lines.
@@ -179,7 +213,7 @@ def cross_cellline_treatment_factors(cct_dict):
     """
     Map treatment factors to protein space via core tensor, stack across cell lines.
 
-    For each cell line, averages the core tensor G over the phase dimension and
+    For each cell line, computes G x_2 C, averages it over the cell-cycle phases and
     projects to protein space via P. Returns DataFrame of shape
     (n_treatment_factors * n_cell_lines, n_proteins) with MultiIndex (cell_line, factor).
     """
@@ -187,14 +221,13 @@ def cross_cellline_treatment_factors(cct_dict):
     rows, index_tuples = [], []
 
     for name, cct in cct_dict.items():
-        G = cct.core
         P = cct.factors[2]
         if proteins is None:
             proteins = list(cct.proteins)
         elif list(cct.proteins) != proteins:
             raise ValueError(f"Protein lists differ: expected {proteins}, got {list(cct.proteins)} for {name}")
 
-        G_avg = G.mean(axis=1)
+        G_avg = tenalg.mode_dot(cct.core, cct.factors[1], mode=1).mean(axis=1)
         signatures = G_avg @ P.T
 
         for k in range(signatures.shape[0]):
@@ -260,3 +293,35 @@ def cross_cellline_phase_profiles(cct_dict):
 
     index = pd.MultiIndex.from_tuples(index_tuples, names=["cell_line", "treatment", "factor"])
     return pd.DataFrame(np.vstack(rows), index=index, columns=phases)
+
+
+def cross_cellline_protein_influence(cct_dict):
+    """Phase-resolved protein influence of each latent protein-factor, stacked across cell lines.
+
+    For each (cell_line, treatment, phase, factor_f), computes F[t, ph, f] * P[:, f] where
+    F = G x_1 T x_2 C. Averaging over phase recovers cross_cellline_protein_factors_by_treatment.
+    The product is invariant to the sign ambiguity of the HOSVD loadings, so rows can be pooled
+    across cell lines.
+
+    Returns DataFrame with 4-level MultiIndex (cell_line, treatment, phase, factor) x proteins.
+    """
+    proteins = None
+    rows, index_tuples = [], []
+
+    for name, cct in cct_dict.items():
+        P = cct.factors[2]
+        if proteins is None:
+            proteins = list(cct.proteins)
+        elif list(cct.proteins) != proteins:
+            raise ValueError(f"Protein lists differ: expected {proteins}, got {list(cct.proteins)} for {name}")
+
+        F = tenalg.multi_mode_dot(cct.core, [cct.factors[0], cct.factors[1]], modes=[0, 1])
+
+        for t_idx, treatment in enumerate(cct.treatments):
+            for ph_idx, phase in enumerate(cct.cc_phases):
+                for f in range(P.shape[1]):
+                    rows.append(F[t_idx, ph_idx, f] * P[:, f])
+                    index_tuples.append((name, treatment, phase, f"Factor {f + 1}"))
+
+    index = pd.MultiIndex.from_tuples(index_tuples, names=["cell_line", "treatment", "phase", "factor"])
+    return pd.DataFrame(np.vstack(rows), index=index, columns=proteins)
