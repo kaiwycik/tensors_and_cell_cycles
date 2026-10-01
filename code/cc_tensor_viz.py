@@ -1086,11 +1086,15 @@ def _violins_with_points(ax, data, x, y, hue, order, hue_order, palette=None, po
     )
     handles, labels = ax.get_legend_handles_labels()
     ax.get_legend().remove()
+    # stripplot jitters with numpy's global RNG; seed it so figures are reproducible.
+    rng_state = np.random.get_state()
+    np.random.seed(0)
     sns.stripplot(
         data=data, x=x, y=y, hue=hue, order=order, hue_order=hue_order,
         palette={h: "0.2" for h in hue_order}, dodge=True, size=point_size, alpha=0.6,
         linewidth=0, legend=False, ax=ax,
     )
+    np.random.set_state(rng_state)
     return handles, labels
 
 
@@ -1130,7 +1134,7 @@ def cross_cellline_loading_violins(df, factors=("Factor 1", "Factor 2"), title=N
     return fig, ax
 
 
-def cross_cellline_treatment_violins(df, title=None):
+def cross_cellline_treatment_violins(df, average_phases=False, title=None):
     """Factor activity by treatment, pooled over cell lines: one panel per latent protein-factor,
     one violin per phase (same layout as CCTensorViz.factor_score_violins).
 
@@ -1138,9 +1142,13 @@ def cross_cellline_treatment_violins(df, title=None):
          phases). Each violin pools F[t, j, f] of one treatment and phase across cell lines; the
          points are the individual cell lines. Activities are assumed sign-aligned across cell
          lines (sign_align_protein_factors).
+    average_phases : if True, average F over the phases first (equal weight per phase) and draw
+         one violin per treatment, colored by factor.
     """
     plt.rcParams.update(_RC)
 
+    if average_phases:
+        df = df.mean(axis=1).to_frame("Phase mean")
     phases = list(df.columns)
     treatments = list(dict.fromkeys(df.index.get_level_values("treatment")))
     factors = sorted(df.index.get_level_values("factor").unique(), key=lambda x: int(x.split()[-1]))
@@ -1152,6 +1160,7 @@ def cross_cellline_treatment_violins(df, title=None):
     for ax, f in zip(axes, factors):
         handles, labels = _violins_with_points(
             ax, long[long["factor"] == f], "treatment", "activity", "phase", treatments, phases,
+            palette={phases[0]: _factor_color(f)} if average_phases else None,
         )
         ax.set_title(f, loc="left", fontsize=10)
         ax.axhline(0, color="0.6", lw=0.8, ls="--", zorder=0)
@@ -1160,9 +1169,10 @@ def cross_cellline_treatment_violins(df, title=None):
         sns.despine(ax=ax)
 
     axes[-1].tick_params(axis="x", rotation=45)
-    fig.legend(handles, labels, title="Phase", bbox_to_anchor=(0.95, 0.5), loc="center left")
+    if not average_phases:
+        fig.legend(handles, labels, title="Phase", bbox_to_anchor=(0.95, 0.5), loc="center left")
     fig.suptitle(title or "Factor activity by treatment across cell lines", y=0.96)
-    fig.tight_layout(rect=[0, 0, 0.93, 0.99])
+    fig.tight_layout(rect=[0, 0, 1 if average_phases else 0.93, 0.99])
     return fig, axes
 
 
