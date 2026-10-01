@@ -65,6 +65,23 @@ class CCTensor:
         self.tensor = return_tensor
         return return_tensor
 
+    def cell_factor_activity(self) -> pd.DataFrame:
+        """
+        Project each cell onto the protein factors P, after z-scaling it with the same per-protein
+        mean and standard deviation (over the pseudobulk group means) as the tensor. The mean over the
+        cells of a (treatment, phase) group is then F[t, j, :] with F = G x_1 T x_2 C.
+        Returns DataFrame (cells x factors) with treatment and phase columns.
+        """
+        adata_df = self.adata.to_df()
+        pseudobulk_df = adata_df.groupby([self.adata.obs[self.treatment_col], self.adata.obs[self.cc_phase_col]], observed=True).mean()
+        scaled = (adata_df - pseudobulk_df.mean()) / pseudobulk_df.std()
+
+        P = self.factors[2]
+        df = pd.DataFrame(scaled.values @ P, index=adata_df.index, columns=[f"Factor {f + 1}" for f in range(P.shape[1])])
+        df["treatment"] = self.adata.obs[self.treatment_col].astype(str).values
+        df["phase"] = self.adata.obs[self.cc_phase_col].astype(str).values
+        return df
+
     def HOSVD(self, truncation_rank=None) -> tuple:
         """
         Compute the Higher-Order Singular Value Decomposition (HOSVD) of the tensor.
@@ -293,6 +310,25 @@ def cross_cellline_phase_profiles(cct_dict):
 
     index = pd.MultiIndex.from_tuples(index_tuples, names=["cell_line", "treatment", "factor"])
     return pd.DataFrame(np.vstack(rows), index=index, columns=phases)
+
+
+def cross_cellline_cell_activity(cct_dict, random_state=0):
+    """Per-cell factor activity (CCTensor.cell_factor_activity) stacked across cell lines.
+
+    For each treatment, every cell line contributes the same number of randomly drawn cells: the
+    count of the smallest line under that treatment. Factors are assumed sign-aligned
+    (sign_align_protein_factors).
+
+    Returns DataFrame (cells x factors) with treatment, phase and cell_line columns.
+    """
+    df = pd.concat(
+        [cct.cell_factor_activity().assign(cell_line=name) for name, cct in cct_dict.items()],
+        ignore_index=True,
+    )
+    n = df.groupby(["treatment", "cell_line"]).size().groupby(level="treatment").min()
+    df = df.sample(frac=1, random_state=random_state)
+    keep = df.groupby(["treatment", "cell_line"]).cumcount() < df["treatment"].map(n)
+    return df[keep].sort_index()
 
 
 def cross_cellline_protein_influence(cct_dict):

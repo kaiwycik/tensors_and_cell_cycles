@@ -411,6 +411,41 @@ class CCTensorViz:
         fig.colorbar(im, ax=flat[:n].tolist(), orientation="vertical", shrink=0.8, pad=0.04)
         return fig, axes
 
+    def factor_activity_violins(self, pool_phases=False):
+        """Single-cell factor activity (CCTensor.cell_factor_activity), one violin per factor and
+        phase, or per factor with the phases pooled. Every first-mode category (e.g. cell line)
+        contributes the same number of randomly drawn cells: the count of the smallest one."""
+        df = self.cct.cell_factor_activity()
+        n = df["treatment"].value_counts().min()
+        df = df.groupby("treatment").sample(n=n, random_state=self.random_state)
+        long = df.melt(id_vars="phase", value_vars=self.factor_names, var_name="factor", value_name="activity")
+        long = _central(long, ["factor"] if pool_phases else ["factor", "phase"])
+
+        if pool_phases:
+            kw = {"hue": "factor", "hue_order": self.factor_names,
+                  "palette": {f: _factor_color(f) for f in self.factor_names}}
+        else:
+            kw = {"hue": "phase", "hue_order": list(self.cc_phases)}
+
+        fig, ax = plt.subplots(figsize=(8, 4))
+        sns.violinplot(
+            data=long, x="factor", y="activity", order=self.factor_names,
+            cut=0, inner="quartile", linewidth=0.8, ax=ax, **kw,
+        )
+        if not pool_phases:
+            sns.move_legend(ax, "upper left", bbox_to_anchor=(1.01, 1.0), title="Phase", frameon=False)
+
+        ax.axhline(0, color="0.6", lw=0.8, ls="--", zorder=0)
+        ax.set_xlabel("")
+        ax.set_ylabel("Factor activity")
+        ax.set_title(
+            f"Single-cell factor activity, {'all phases' if pool_phases else 'by phase'}\n"
+            f"{n} cells per {self.mode0_label.lower()}, central 98% per violin", fontsize=11,
+        )
+        sns.despine(ax=ax)
+        fig.tight_layout()
+        return fig, ax
+
     def singular_value_spectrum(self):
         mode_labels = [self.mode0_label, "Cell-cycle phase", "Protein"]
         fig, axes = plt.subplots(1, 3, figsize=(15, 4))
@@ -1076,6 +1111,13 @@ def _factor_color(factor):
     return sns.color_palette("tab10")[int(factor.split()[-1]) - 1]
 
 
+def _central(long, by, q=0.01):
+    """Keep the values of each group between its q and 1 - q quantiles. Single-cell factor
+    activities have rare extreme values that would otherwise flatten the violins."""
+    grouped = long.groupby(by)["activity"]
+    return long[long["activity"].between(grouped.transform("quantile", q), grouped.transform("quantile", 1 - q))]
+
+
 def _violins_with_points(ax, data, x, y, hue, order, hue_order, palette=None, point_size=3):
     """Violins in the style of CCTensorViz.factor_score_violins (cut=0, quartile lines) with the
     individual values drawn on top. Returns the hue legend handles and labels; the axis legend is
@@ -1134,34 +1176,35 @@ def cross_cellline_loading_violins(df, factors=("Factor 1", "Factor 2"), title=N
     return fig, ax
 
 
-def cross_cellline_treatment_violins(df, average_phases=False, title=None):
-    """Factor activity by treatment, pooled over cell lines: one panel per latent protein-factor,
-    one violin per phase (same layout as CCTensorViz.factor_score_violins).
+def cross_cellline_treatment_violins(df, pool_phases=False, title=None):
+    """Single-cell factor activity by treatment, pooled over cell lines: one panel per latent
+    protein-factor, one violin per phase (same layout as CCTensorViz.factor_score_violins).
 
-    df : output of cross_cellline_phase_profiles (MultiIndex (cell_line, treatment, factor) x
-         phases). Each violin pools F[t, j, f] of one treatment and phase across cell lines; the
-         points are the individual cell lines. Activities are assumed sign-aligned across cell
-         lines (sign_align_protein_factors).
-    average_phases : if True, average F over the phases first (equal weight per phase) and draw
-         one violin per treatment, colored by factor.
+    df : output of cross_cellline_cell_activity (cells x factors, with treatment, phase and
+         cell_line columns).
+    pool_phases : if True, pool the cells of all phases into one violin per treatment, colored by
+         factor.
     """
     plt.rcParams.update(_RC)
 
-    if average_phases:
-        df = df.mean(axis=1).to_frame("Phase mean")
-    phases = list(df.columns)
-    treatments = list(dict.fromkeys(df.index.get_level_values("treatment")))
-    factors = sorted(df.index.get_level_values("factor").unique(), key=lambda x: int(x.split()[-1]))
-    long = df.reset_index().melt(id_vars=list(df.index.names), var_name="phase", value_name="activity")
+    factors = [c for c in df.columns if c.startswith("Factor ")]
+    treatments = sorted(df["treatment"].unique())
+    phases = sorted(df["phase"].unique())
+    long = df.melt(id_vars=["treatment", "phase"], value_vars=factors, var_name="factor", value_name="activity")
+    long = _central(long, ["factor", "treatment"] if pool_phases else ["factor", "treatment", "phase"])
 
     fig, axes = plt.subplots(len(factors), 1, figsize=(12, 2.4 * len(factors)), sharex=True, squeeze=False)
     axes = axes.ravel()
 
     for ax, f in zip(axes, factors):
-        handles, labels = _violins_with_points(
-            ax, long[long["factor"] == f], "treatment", "activity", "phase", treatments, phases,
-            palette={phases[0]: _factor_color(f)} if average_phases else None,
+        kw = {"color": _factor_color(f)} if pool_phases else {"hue": "phase", "hue_order": phases}
+        sns.violinplot(
+            data=long[long["factor"] == f], x="treatment", y="activity", order=treatments,
+            cut=0, inner="quartile", linewidth=0.8, ax=ax, **kw,
         )
+        if not pool_phases:
+            handles, labels = ax.get_legend_handles_labels()
+            ax.get_legend().remove()
         ax.set_title(f, loc="left", fontsize=10)
         ax.axhline(0, color="0.6", lw=0.8, ls="--", zorder=0)
         ax.set_xlabel("")
@@ -1169,10 +1212,14 @@ def cross_cellline_treatment_violins(df, average_phases=False, title=None):
         sns.despine(ax=ax)
 
     axes[-1].tick_params(axis="x", rotation=45)
-    if not average_phases:
+    if not pool_phases:
         fig.legend(handles, labels, title="Phase", bbox_to_anchor=(0.95, 0.5), loc="center left")
-    fig.suptitle(title or "Factor activity by treatment across cell lines", y=0.96)
-    fig.tight_layout(rect=[0, 0, 1 if average_phases else 0.93, 0.99])
+    fig.suptitle(
+        f"{title or 'Single-cell factor activity by treatment across cell lines'}\n"
+        "central 98% of cells per violin, equal cells per cell line within each treatment",
+        y=0.97,
+    )
+    fig.tight_layout(rect=[0, 0, 1 if pool_phases else 0.93, 0.99])
     return fig, axes
 
 
