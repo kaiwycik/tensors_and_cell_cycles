@@ -1076,29 +1076,22 @@ def _factor_color(factor):
     return sns.color_palette("tab10")[int(factor.split()[-1]) - 1]
 
 
-def _influence_violin(ax, pos, vals, color, width, min_n, points=False):
-    """One violin body with a black median tick. Jittered points replace the body when there are
-    fewer than min_n values, and are drawn on top of it when points=True."""
-    vals = np.asarray(vals, dtype=float)
-    vals = vals[np.isfinite(vals)]
-    if len(vals) == 0:
-        return
-
-    draw_body = len(vals) >= min_n and np.ptp(vals) > 0
-    if draw_body:
-        parts = ax.violinplot([vals], positions=[pos], widths=width, showextrema=False)
-        for body in parts["bodies"]:
-            body.set_facecolor(color)
-            body.set_edgecolor("none")
-            body.set_alpha(0.75)
-    if points or not draw_body:
-        jitter = np.random.default_rng(0).uniform(-0.3, 0.3, len(vals)) * width
-        ax.scatter(
-            pos + jitter, vals, s=8, color="0.25" if draw_body else color,
-            alpha=0.7, linewidths=0, zorder=3,
-        )
-
-    ax.hlines(np.median(vals), pos - 0.35 * width, pos + 0.35 * width, color="k", lw=1.5, zorder=4)
+def _violins_with_points(ax, data, x, y, hue, order, hue_order, palette=None, point_size=3):
+    """Violins in the style of CCTensorViz.factor_score_violins (cut=0, quartile lines) with the
+    individual values drawn on top. Returns the hue legend handles and labels; the axis legend is
+    removed so the caller can place it."""
+    sns.violinplot(
+        data=data, x=x, y=y, hue=hue, order=order, hue_order=hue_order, palette=palette,
+        cut=0, inner="quartile", linewidth=0.8, ax=ax,
+    )
+    handles, labels = ax.get_legend_handles_labels()
+    ax.get_legend().remove()
+    sns.stripplot(
+        data=data, x=x, y=y, hue=hue, order=order, hue_order=hue_order,
+        palette={h: "0.2" for h in hue_order}, dodge=True, size=point_size, alpha=0.6,
+        linewidth=0, legend=False, ax=ax,
+    )
+    return handles, labels
 
 
 def cross_cellline_loading_violins(df, factors=("Factor 1", "Factor 2"), title=None):
@@ -1112,15 +1105,14 @@ def cross_cellline_loading_violins(df, factors=("Factor 1", "Factor 2"), title=N
     plt.rcParams.update(_RC)
 
     proteins = list(df.columns)
-    width = 0.8 / len(factors)
-    offsets = (np.arange(len(factors)) - (len(factors) - 1) / 2) * width
+    long = df.reset_index().melt(id_vars=list(df.index.names), var_name="protein", value_name="loading")
+    long = long[long["factor"].isin(factors)]
 
     fig, ax = plt.subplots(figsize=(max(10, 0.7 * len(proteins)), 5))
-
-    for f, off in zip(factors, offsets):
-        sub = df.xs(f, level="factor")
-        for x, protein in enumerate(proteins):
-            _influence_violin(ax, x + off, sub[protein].values, _factor_color(f), width, min_n=3, points=True)
+    handles, labels = _violins_with_points(
+        ax, long, "protein", "loading", "factor", proteins, list(factors),
+        palette={f: _factor_color(f) for f in factors},
+    )
 
     ax.axhline(0, color="0.6", lw=0.8, ls="--", zorder=0)
     for x in np.arange(0.5, len(proteins) - 0.5):
@@ -1128,18 +1120,53 @@ def cross_cellline_loading_violins(df, factors=("Factor 1", "Factor 2"), title=N
     ax.set_xticks(np.arange(len(proteins)))
     ax.set_xticklabels(proteins, rotation=45, ha="right", fontsize=8)
     ax.set_xlim(-0.6, len(proteins) - 0.4)
+    ax.set_xlabel("")
     ax.set_ylabel("Loading")
     ax.set_title(title or "Protein loadings on latent protein-factors across cell lines")
-
-    handles = [Patch(facecolor=_factor_color(f), alpha=0.75, label=f) for f in factors]
-    ax.legend(handles=handles, title="Factor", loc="upper left", bbox_to_anchor=(1.01, 1.0), frameon=False)
+    ax.legend(handles, labels, title="Factor", loc="upper left", bbox_to_anchor=(1.01, 1.0), frameon=False)
 
     sns.despine(ax=ax)
     fig.tight_layout()
     return fig, ax
 
 
-def cross_cellline_cluster_violins(df, labels, title=None, min_n=10, max_cols=5):
+def cross_cellline_treatment_violins(df, title=None):
+    """Factor activity by treatment, pooled over cell lines: one panel per latent protein-factor,
+    one violin per phase (same layout as CCTensorViz.factor_score_violins).
+
+    df : output of cross_cellline_phase_profiles (MultiIndex (cell_line, treatment, factor) x
+         phases). Each violin pools F[t, j, f] of one treatment and phase across cell lines; the
+         points are the individual cell lines. Activities are assumed sign-aligned across cell
+         lines (sign_align_protein_factors).
+    """
+    plt.rcParams.update(_RC)
+
+    phases = list(df.columns)
+    treatments = list(dict.fromkeys(df.index.get_level_values("treatment")))
+    factors = sorted(df.index.get_level_values("factor").unique(), key=lambda x: int(x.split()[-1]))
+    long = df.reset_index().melt(id_vars=list(df.index.names), var_name="phase", value_name="activity")
+
+    fig, axes = plt.subplots(len(factors), 1, figsize=(12, 2.4 * len(factors)), sharex=True, squeeze=False)
+    axes = axes.ravel()
+
+    for ax, f in zip(axes, factors):
+        handles, labels = _violins_with_points(
+            ax, long[long["factor"] == f], "treatment", "activity", "phase", treatments, phases,
+        )
+        ax.set_title(f, loc="left", fontsize=10)
+        ax.axhline(0, color="0.6", lw=0.8, ls="--", zorder=0)
+        ax.set_xlabel("")
+        ax.set_ylabel("Factor activity")
+        sns.despine(ax=ax)
+
+    axes[-1].tick_params(axis="x", rotation=45)
+    fig.legend(handles, labels, title="Phase", bbox_to_anchor=(0.95, 0.5), loc="center left")
+    fig.suptitle(title or "Factor activity by treatment across cell lines", y=0.96)
+    fig.tight_layout(rect=[0, 0, 0.93, 0.99])
+    return fig, axes
+
+
+def cross_cellline_cluster_violins(df, labels, title=None, max_cols=5):
     """One panel per protein: protein influence by cluster, one violin per latent protein-factor.
 
     df : output of cross_cellline_protein_influence (or the phase-averaged
@@ -1159,10 +1186,10 @@ def cross_cellline_cluster_violins(df, labels, title=None, min_n=10, max_cols=5)
     clusters = np.sort(labels.unique())
     n_members = labels.value_counts()
 
-    factors = df.index.get_level_values("factor")
-    unique_factors = sorted(factors.unique(), key=lambda x: int(x.split()[-1]))
-    width = 0.8 / len(unique_factors)
-    offsets = (np.arange(len(unique_factors)) - (len(unique_factors) - 1) / 2) * width
+    factors = sorted(df.index.get_level_values("factor").unique(), key=lambda x: int(x.split()[-1]))
+    long = df.reset_index(drop=True)
+    long["cluster"] = cluster.astype(int) + 1
+    long["factor"] = df.index.get_level_values("factor")
 
     proteins = list(df.columns)
     cols = min(len(proteins), max_cols)
@@ -1172,37 +1199,31 @@ def cross_cellline_cluster_violins(df, labels, title=None, min_n=10, max_cols=5)
 
     for p_idx, protein in enumerate(proteins):
         ax = flat[p_idx]
-        vals_all = df[protein].values
-
+        handles, legend_labels = _violins_with_points(
+            ax, long, "cluster", protein, "factor", [int(c) + 1 for c in clusters], factors,
+            palette={f: _factor_color(f) for f in factors}, point_size=1.5,
+        )
         for c_idx, c in enumerate(clusters):
-            for f, off in zip(unique_factors, offsets):
-                mask = (cluster == c) & (factors == f)
-                _influence_violin(ax, c_idx + off, vals_all[mask], _factor_color(f), width, min_n)
             ax.text(
                 c_idx, 0.02, f"{n_members[c]}", transform=ax.get_xaxis_transform(),
                 ha="center", va="bottom", fontsize=6, color="0.5",
             )
 
-        ax.set_ylim(*np.percentile(vals_all, [2, 98]))
+        ax.set_ylim(*np.percentile(long[protein], [2, 98]))
         ax.axhline(0, color="0.6", lw=0.8, ls="--", zorder=0)
-        ax.set_xticks(np.arange(len(clusters)))
-        ax.set_xticklabels(clusters + 1)
         ax.set_xlim(-0.6, len(clusters) - 0.4)
         ax.set_title(protein, fontsize=10)
-        if p_idx % cols == 0:
-            ax.set_ylabel("Influence")
-        if p_idx >= len(proteins) - cols:
-            ax.set_xlabel("Cluster")
+        ax.set_ylabel("Influence" if p_idx % cols == 0 else "")
+        ax.set_xlabel("Cluster" if p_idx >= len(proteins) - cols else "")
 
     for idx in range(len(proteins), len(flat)):
         flat[idx].axis("off")
 
-    handles = [Patch(facecolor=_factor_color(f), alpha=0.75, label=f) for f in unique_factors]
-    fig.legend(handles=handles, title="Factor", loc="lower right", bbox_to_anchor=(0.98, 0.04), frameon=False)
+    fig.legend(handles, legend_labels, title="Factor", loc="lower right", bbox_to_anchor=(0.98, 0.04), frameon=False)
     fig.suptitle(
         f"{title or 'Protein influence by cluster'}  (k={len(clusters)})\n"
-        f"y-axis: 2nd-98th percentile per protein, black tick = median, "
-        f"<{min_n} values shown as points, grey number = members per cluster",
+        f"y-axis: 2nd-98th percentile per protein, points = values, dashed lines = quartiles "
+        f"(long dashes = median), grey number = members per cluster",
         fontsize=12,
     )
     fig.tight_layout(rect=[0, 0, 1, 0.96])
