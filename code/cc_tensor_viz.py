@@ -391,6 +391,34 @@ class CCTensorViz:
         fig.tight_layout()
         return fig, ax
 
+    def F_per_phase_heatmaps(self, annotate=True):
+        """F[:, j, :] for each phase j, side by side on one color scale (as in F_slice_montage)."""
+        vmax = np.abs(self.F).max() or 1.0
+        n_phases = len(self.cc_phases)
+
+        fig, axes = plt.subplots(
+            1, n_phases, sharey=True, layout="constrained",
+            figsize=(n_phases * max(3, self.n_factors * 1.2), max(6, len(self.treatments) * 0.55)),
+        )
+        fig.get_layout_engine().set(wspace=0.05)
+
+        for j, (ax, phase) in enumerate(zip(axes, self.cc_phases)):
+            im = ax.imshow(self.F[:, j, :], cmap=CMAP, vmin=-vmax, vmax=vmax, aspect="auto")
+            ax.set_title(phase, fontsize=11)
+            ax.set_xticks(np.arange(self.n_factors))
+            ax.set_xticklabels([f"{f + 1}" for f in range(self.n_factors)])
+            ax.set_xlabel("Latent Protein-Factors", fontsize=10)
+            if annotate:
+                self._annotate_heatmap(ax, self.F[:, j, :], vmax)
+
+        axes[0].set_yticks(np.arange(len(self.treatments)))
+        axes[0].set_yticklabels(self.treatments, fontsize=8)
+        axes[0].set_ylabel(self.mode0_label, fontsize=10)
+
+        fig.colorbar(im, ax=axes, orientation="vertical", shrink=0.8)
+        fig.suptitle(f"F per phase -- {self.mode0_label} x Latent Protein-Factors", fontsize=13)
+        return fig, axes
+
     def F_slice_montage_normalized(self, control="Control", annotate=True):
         matches = np.flatnonzero(self.treatments == control)
         if len(matches) == 0:
