@@ -369,6 +369,28 @@ class CCTensorViz:
         fig.colorbar(im, ax=flat[:n].tolist(), orientation="vertical", shrink=0.8, pad=0.04)
         return fig, axes
 
+    def F_phase_averaged_heatmap(self, annotate=True):
+        F_avg = self.F.mean(axis=1)
+        vmax = np.abs(F_avg).max() or 1.0
+
+        fig, ax = plt.subplots(figsize=(max(4, self.n_factors * 2), max(6, len(self.treatments) * 0.55)))
+        im = ax.imshow(F_avg, cmap=CMAP, vmin=-vmax, vmax=vmax, aspect="auto")
+
+        ax.set_xticks(np.arange(self.n_factors))
+        ax.set_xticklabels([f"{f + 1}" for f in range(self.n_factors)])
+        ax.set_xlabel("Latent Protein-Factors", fontsize=10)
+        ax.set_yticks(np.arange(len(self.treatments)))
+        ax.set_yticklabels(self.treatments, fontsize=8)
+        ax.set_ylabel(self.mode0_label, fontsize=10)
+
+        if annotate:
+            self._annotate_heatmap(ax, F_avg, vmax)
+
+        fig.colorbar(im, ax=ax, orientation="vertical", shrink=0.8, pad=0.04)
+        ax.set_title(f"F averaged over phase -- {self.mode0_label} x Latent Protein-Factors", fontsize=13)
+        fig.tight_layout()
+        return fig, ax
+
     def F_slice_montage_normalized(self, control="Control", annotate=True):
         matches = np.flatnonzero(self.treatments == control)
         if len(matches) == 0:
