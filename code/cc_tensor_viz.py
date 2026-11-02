@@ -161,7 +161,8 @@ class CCTensorViz:
             sub = pt["adata"].copy()
             sub.X = pt["Xz"].copy()
 
-            sc.pp.neighbors(sub, random_state=self.random_state)
+            # use_rep="X": neighbors on the z-scored features, not on a PCA scanpy computes when n_vars > 50
+            sc.pp.neighbors(sub, use_rep="X", random_state=self.random_state)
             sc.tl.diffmap(sub, n_comps=10)
 
             g1_mask = sub.obs[pcol].astype(str).values == "G1"
@@ -212,7 +213,7 @@ class CCTensorViz:
     # ------------------------------------------------------------------ #
 
     def protein_loadings_heatmap(self, annotate=True, text_size=8):
-        fig, ax = plt.subplots(figsize=(max(4, self.n_factors * 2), max(6, len(self.proteins) * 0.55)))
+        fig, ax = plt.subplots(figsize=(max(4, self.n_factors * 2), min(20, max(6, len(self.proteins) * 0.55))))
 
         vmax = np.abs(self.protein_loadings).max() or 1.0
         im = ax.imshow(self.protein_loadings, cmap=CMAP, vmin=-vmax, vmax=vmax, aspect="auto")
@@ -325,7 +326,7 @@ class CCTensorViz:
             annot_kws={"size": 7},
             xticklabels=labels,
             yticklabels=labels,
-            figsize=(max(6, len(labels) * 0.6), max(6, len(labels) * 0.6)),
+            figsize=(max(6, len(labels) * (0.6 if annotate else 0.18)),) * 2,
             dendrogram_ratio=0.15,
             cbar_kws={"label": "Cosine similarity"},
         )
@@ -511,7 +512,8 @@ class CCTensorViz:
             ax.set_xlabel("Component")
             ax.set_ylabel("Singular value")
             ax.set_title(label)
-            ax.set_xticks(np.arange(1, len(sv) + 1))
+            if len(sv) <= 30:
+                ax.set_xticks(np.arange(1, len(sv) + 1))
 
             ax2 = ax.twinx()
             ax2.plot(np.arange(1, len(sv) + 1), cumvar, "C1x--", alpha=0.7)
@@ -1376,7 +1378,7 @@ def cross_cellline_cluster_heatmap(df, labels, title=None, cbar_label="Protein i
 
     n, p = df.shape
     fig, axes = plt.subplots(
-        1, 4, figsize=(max(8, 0.45 * p + 3), max(6, 0.22 * n)),
+        1, 4, figsize=(min(24, max(8, 0.45 * p + 3)), max(6, 0.22 * n)),
         gridspec_kw={"width_ratios": [1, 1, 1, max(12, p)], "wspace": 0.05},
     )
     boundaries = np.flatnonzero(np.diff(cluster)) + 0.5
@@ -1395,7 +1397,7 @@ def cross_cellline_cluster_heatmap(df, labels, title=None, cbar_label="Protein i
     for b in boundaries:
         ax.axhline(b, color="white", lw=2)
     ax.set_xticks(np.arange(p))
-    ax.set_xticklabels(df.columns, rotation=45, ha="right", fontsize=8)
+    ax.set_xticklabels(df.columns, rotation=45 if p <= 40 else 90, ha="right" if p <= 40 else "center", fontsize=8)
     ax.yaxis.tick_right()
     ax.set_yticks(np.arange(n))
     ax.set_yticklabels([f"{cl} - {tr}" for cl, tr in zip(cell_lines, treatments)], fontsize=7)

@@ -4,21 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "5dfc64962b21659f",
+        "id": "d7657898cc1e4e83",
         "type": "tabs",
         "children": [
           {
-            "id": "6b69502de212d061",
+            "id": "bb58f55aa79b0e03",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "2. Notions/n-Mode Tensor Product.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "n-Mode Tensor Product"
+              "title": "New tab"
             }
           }
         ]
@@ -207,7 +203,7 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "6b69502de212d061",
+  "active": "722997cb7154eee3",
   "lastOpenFiles": [
     "Daily Notes/2026-09-02.md",
     "Daily Notes/2026-09-01.md",
